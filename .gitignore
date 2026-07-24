@@ -1,0 +1,26 @@
+# Environments
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# Data and artifacts (regenerable, and far too large for git)
+data/
+checkpoints/
+wandb/
+*.bin
+*.pt
+*.npy
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Local secrets
+.env

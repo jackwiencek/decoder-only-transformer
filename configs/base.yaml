@@ -1,0 +1,43 @@
+# Real training run. Target environment: Colab T4/L4. See docs/adr/0004.
+# Values here are the source of truth - nothing below may be hardcoded in the model.
+
+run_name: base
+
+model:
+  n_layer: 6
+  n_head: 6
+  n_embd: 384        # C; head_size = n_embd // n_head = 64
+  block_size: 256    # T; TinyStories documents are ~200-300 BPE tokens
+  vocab_size: 8192   # V; see docs/adr/0003
+  dropout: 0.1
+  tie_embeddings: true
+
+data:
+  dataset: TinyStories
+  train_tokens: data/train.bin    # flat uint16 array
+  val_tokens: data/val.bin
+
+train:
+  batch_size: 64
+  max_steps: 20000
+  learning_rate: 3.0e-4
+  min_learning_rate: 3.0e-5
+  warmup_steps: 200
+  weight_decay: 0.1
+  beta1: 0.9
+  beta2: 0.95
+  grad_clip: 1.0
+  device: cuda           # falls back to cpu at runtime if unavailable
+  seed: 1337
+
+eval:
+  eval_interval: 500
+  eval_batches: 50       # fixed count for a deterministic number; see docs/adr/0005
+
+checkpoint:
+  dir: checkpoints/base
+  save_interval: 1000
+
+logging:
+  wandb_project: tinygpt-tinystories
+  log_interval: 50

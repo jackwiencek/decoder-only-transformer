@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tinygpt"
+version = "0.1.0"
+description = "A decoder-only transformer language model built from PyTorch primitives, trained on TinyStories."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.4",
+    "numpy>=1.26",
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+    "huggingface-hub>=0.24",
+    "wandb>=0.17",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

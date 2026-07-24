@@ -1,0 +1,44 @@
+# Tiny CPU run. Purpose is correctness, not quality - it should finish in seconds
+# on the laptop and exercise every code path the real run uses.
+# Never quote a loss number from this config.
+
+run_name: smoke
+
+model:
+  n_layer: 2
+  n_head: 2
+  n_embd: 64
+  block_size: 32
+  vocab_size: 8192
+  dropout: 0.0
+  tie_embeddings: true
+
+data:
+  dataset: TinyStories
+  train_tokens: data/train.bin
+  val_tokens: data/val.bin
+
+train:
+  batch_size: 8
+  max_steps: 20
+  learning_rate: 1.0e-3
+  min_learning_rate: 1.0e-4
+  warmup_steps: 2
+  weight_decay: 0.1
+  beta1: 0.9
+  beta2: 0.95
+  grad_clip: 1.0
+  device: cpu
+  seed: 1337
+
+eval:
+  eval_interval: 10
+  eval_batches: 2
+
+checkpoint:
+  dir: checkpoints/smoke
+  save_interval: 10
+
+logging:
+  wandb_project: null    # no-op logger; smoke runs must not need network access
+  log_interval: 5
