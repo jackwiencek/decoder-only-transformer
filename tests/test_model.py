@@ -2,7 +2,38 @@
 
 import torch
 
-from tinygpt.model import GPT
+from tinygpt.model import GPT, Head
+
+
+def test_head_maps_BTC_to_BThs():
+    B, T, C, hs = 2, 5, 8, 4
+    head = Head(n_embd=C, head_size=hs)
+    x = torch.randn(B, T, C)
+    out = head(x)
+    assert out.shape == (B, T, hs)
+
+
+def test_head_is_causal():
+    # The defining property of causal attention: a token's output depends only
+    # on itself and earlier positions - NEVER on the future. We verify it by
+    # perturbing only the LAST time step and checking what does / doesn't move.
+    torch.manual_seed(0)
+    B, T, C, hs = 2, 6, 8, 8
+    head = Head(n_embd=C, head_size=hs)
+
+    x = torch.randn(B, T, C)
+    out_before = head(x)
+
+    x_perturbed = x.clone()
+    x_perturbed[:, -1, :] = torch.randn(B, C)  # change ONLY the final token
+    out_after = head(x_perturbed)
+
+    # TODO(human): write two assertions that encode causality:
+    #   1. every position EXCEPT the last is unchanged by the perturbation
+    assert torch.allclose(out_before[:, :-1, :],out_after[:,:-1,:])
+    #   2. the last position IS changed by it
+    # Use torch.allclose(a, b) -> bool, and slicing [:, :-1, :] / [:, -1, :].
+    assert not torch.allclose(out_before[:,-1,:],out_after[:,-1,:])
 
 
 def test_forward_maps_BT_ids_to_BTV_logits():
