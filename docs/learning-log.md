@@ -40,6 +40,41 @@ Two setup details worth remembering:
 
 ---
 
+## 2026-08-04 — Byte-level BPE tokenizer
+
+Built the tokenizer in `tokenizer.py` from primitives, one function at a time,
+with a shape/behaviour test locking in each piece (`tests/test_tokenizer.py`).
+
+The algorithm is two stateless kernels plus a stateful class wrapping them:
+
+- `get_stats(ids)` — count adjacent pairs. `zip(ids, ids[1:])` yields the pairs;
+  the *unequal* lengths are what make it stop one short (hence `strict=False`).
+- `merge(ids, pair, new_id)` — collapse a pair, non-overlapping, left to right.
+  The correctness traps were both in the index loop: forgetting to advance `i`
+  (infinite loop) and over-tight bounds dropping the tail. The guard belongs in
+  the `if` (`i < len(ids) - 1 and ...`), not the `while`, so the last element is
+  still appended; `and` short-circuits so `ids[i+1]` is never read out of range.
+- `BPETokenizer.train/encode/decode` — hold the learned `merges` on `self`.
+
+Non-obvious things worth keeping:
+
+- **Merges are hierarchical and ordered.** New ids merge with other new ids, so
+  `merges` is a topological sort (parents after children). `decode` exploits this
+  to build its `id -> bytes` vocab in one forward pass — no recursion — because a
+  child's bytes are always already computed. `encode` exploits the same order in
+  reverse: apply the *lowest* merge id present first (`min(..., key=merges.get)`),
+  never the highest, or you'd try to merge tokens that don't exist yet.
+- **Byte-level means never out-of-vocabulary.** Start from the 256 byte values;
+  any string UTF-8-encodes into them, so `decode(encode(x)) == x` holds even for
+  unicode never seen in training. Verified by the round-trip test on `"ééé"`.
+- `bytes([i])` (a one-byte object) vs `bytes(i)` (i zero-bytes) — the `[i]` is
+  load-bearing. And `argmax`/`argmin` over a dict is `max/min(d, key=d.get)`.
+- `train` needs a `len(ids) < 2: break` guard: a small corpus can exhaust all
+  pairs before reaching `vocab_size`, and `max({})` raises. The 100MB real corpus
+  won't hit it, but the smoke-sized inputs do.
+
+---
+
 ## Next up: tensors and attention from first principles
 
 Questions to be able to answer by the end of that session:
