@@ -30,6 +30,37 @@ class Head(nn.Module):
         out = scores @ v                                     # (B,T,T)@(B,T,hs) -> (B, T, hs)
         return out
 
+
+class MultiHeadAttention(nn.Module):
+    """nh causal heads run in parallel, concatenated and projected back to C."""
+
+    def __init__(self, n_embd: int, n_head: int):
+        super().__init__()
+        head_size = n_embd // n_head  # so nh heads of size hs concat back to C
+        self.heads = nn.ModuleList([Head(n_embd, head_size) for _ in range(n_head)])
+        self.proj = nn.Linear(n_embd, n_embd)  # mixes the heads' outputs together
+
+    def forward(self, x: torch.Tensor):
+        # x: (B, T, C). Each head returns (B, T, hs); there are nh of them.
+        tensors = [h(x) for h in self.heads]        # nh tensors, each (B, T, hs)
+        tensor_concat = torch.cat(tensors, dim=-1)  # (B, T, nh*hs) = (B, T, C)
+        return self.proj(tensor_concat)             # (B, T, C)
+
+
+class FeedForward(nn.Module):
+    """Position-wise MLP: expand to 4*C, apply a nonlinearity, project back to C."""
+
+    def __init__(self, n_embd: int):
+        super().__init__()
+        # TODO(human): build the 2-layer MLP as self.net.
+        # nn.Sequential(...) chaining: Linear(n_embd -> 4*n_embd), a nonlinearity
+        # (nn.ReLU() or nn.GELU()), then Linear(4*n_embd -> n_embd).
+
+    def forward(self, x: torch.Tensor):
+        # x: (B, T, C) -> (B, T, C), applied independently per position.
+        return self.net(x)
+
+
 class GPT(nn.Module):
     def __init__(self,vocab_size: int, n_embd: int, block_size: int):
         super().__init__()
